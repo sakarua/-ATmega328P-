@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm Thu Dec 25 22:43:35 2025
+AVRASM ver. 2.2.8  D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm Sun Dec 28 23:35:17 2025
 
 [builtin](2): Including file 'D:/Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
 D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(2): Including file 'D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\def.inc'
@@ -1000,13 +1000,14 @@ D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(3): Including file 
 000000 c0ca                          RJMP Init
                                  
                                  .org 0x002A                ; ADC conversion complete vector
-00002a c0ed                          RJMP ADC_ISR
+00002a c0d5                          RJMP ADC_ISR
                                  
                                  .dseg 
                                  .org $0100
 000100                           Result_mV_L: .byte 1 ; 毫伏特值的低 8 位 (地址 $0100)
 000101                           Result_mV_H: .byte 1 ; 毫伏特值的高 8 位 (地址 $0101)
 000102                           Direction_Addr: .byte 1 ; 存储方向变量
+000103                           ADC_Channel_Flag: .byte 1 ; 0=ADC4(Fan), 1=ADC5(Servo)
                                  
                                  .cseg
                                  .equ CONST_5000_L = low(5000)   ; 5000的低8位: $88 (136)
@@ -1199,7 +1200,7 @@ D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(3): Including file 
 000072 e008                          LDI R16, 0b00001000    ; 千位
 000073 b908                          OUT PORTC, R16
 000074 e0f2                          LDI ZH, high(SEG_TABLE * 2)
-000075 e8e4                          LDI ZL, low(SEG_TABLE * 2)   
+000075 e9ee                          LDI ZL, low(SEG_TABLE * 2)   
 000076 0fe5                          ADD ZL, R21         ; 千位数据
 000077 9104                          LPM R16, Z          ; 读取段码  
                                      ; 千位的小数点常亮：清除 DP 位 (bit5 -> mask 0xDF)
@@ -1212,7 +1213,7 @@ D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(3): Including file 
 00007d e004                      	LDI R16, 0b00000100    ; 百位
 00007e b908                          OUT PORTC, R16
 00007f e0f2                          LDI ZH, high(SEG_TABLE * 2)
-000080 e8e4                          LDI ZL, low(SEG_TABLE * 2)  
+000080 e9ee                          LDI ZL, low(SEG_TABLE * 2)  
 000081 0fe6                          ADD ZL, R22         ; 百位数据
 000082 9104                          LPM R16, Z          ; 读取段码  
 000083 b90b                          OUT PORTD, R16      ; 输出段码
@@ -1223,7 +1224,7 @@ D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(3): Including file 
 000087 e002                      	LDI R16, 0b00000010    ; 十位
 000088 b908                          OUT PORTC, R16
 000089 e0f2                          LDI ZH, high(SEG_TABLE * 2)
-00008a e8e4                          LDI ZL, low(SEG_TABLE * 2)   
+00008a e9ee                          LDI ZL, low(SEG_TABLE * 2)   
 00008b 0fe7                          ADD ZL, R23         ; 十位数据
 00008c 9104                          LPM R16, Z          ; 读取段码  
 00008d b90b                          OUT PORTD, R16      ; 输出段码
@@ -1234,7 +1235,7 @@ D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(3): Including file 
 000091 e001                      	LDI R16, 0b00000001    ; 个位
 000092 b908                          OUT PORTC, R16
 000093 e0f2                          LDI ZH, high(SEG_TABLE * 2)
-000094 e8e4                          LDI ZL, low(SEG_TABLE * 2) 
+000094 e9ee                          LDI ZL, low(SEG_TABLE * 2) 
 000095 0fe4                          ADD ZL, R20         ; 个位数据
 000096 9104                          LPM R16, Z          ; 读取段码  
 000097 b90b                          OUT PORTD, R16      ; 输出段码
@@ -1364,126 +1365,149 @@ D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm(3): Including file 
 0000e7 ee88                          ldi DutyL, low(SERVO_MIN)
 0000e8 e000                          LDI R16, 0
 0000e9 9300 0102                     STS Direction_Addr, R16
+0000eb 9300 0103                     STS ADC_Channel_Flag, R16 ; 初始化 ADC 通道标志为 0
                                  	;------------------------------------------------------
                                  	//LDI R16, 1<<ADC0D
                                  	//STS DIDR0, R16    //Disable digital input buffer on PORTC:0 (saving power) 
-0000eb e80f                      	LDI R16, 0x8F   
-0000ec 9300 007a                 	STS ADCSRA, R16 //ADC enalbe, conversion not started, single conversion mode(auto trigger disabled), interrupt disable, system clk diveded by 128 as ADC clock
-0000ee e404                      	LDI R16, 0x44   // ADC4 (PC4) selected, AVCC reference
-0000ef 9300 007c                 	STS ADMUX, R16   //use AVCC as reference voltage, connect channel 4 to ADC
-0000f1 9478                      	SEI
+0000ed e80f                      	LDI R16, 0x8F   
+0000ee 9300 007a                 	STS ADCSRA, R16 //ADC enalbe, conversion not started, single conversion mode(auto trigger disabled), interrupt disable, system clk diveded by 128 as ADC clock
+0000f0 e404                      	LDI R16, 0x44   // ADC4 (PC4) selected, AVCC reference
+0000f1 9300 007c                 	STS ADMUX, R16   //use AVCC as reference voltage, connect channel 4 to ADC
+0000f3 9478                      	SEI
                                  
                                  Start_first_conversion:
-0000f2 9100 007a                 	LDS  R16, ADCSRA
-0000f4 6400                      	ORI  R16, 1<<ADSC
-0000f5 9300 007a                 	STS ADCSRA,R16  //start conversion
+0000f4 9100 007a                 	LDS  R16, ADCSRA
+0000f6 6400                      	ORI  R16, 1<<ADSC
+0000f7 9300 007a                 	STS ADCSRA,R16  //start conversion
                                      
                                  Main_loop:
-0000f7 9390 0089                     sts OCR1AH, DutyH
-0000f9 9380 0088                     sts OCR1AL, DutyL
-                                 
                                      ; --- 数码管显示刷新 ---
                                      ; 从 SRAM 读取最新的电压值
-0000fb 9180 0100                     LDS R24, Result_mV_L
-0000fd 9190 0101                     LDS R25, Result_mV_H
-0000ff df4d                          RCALL convert           ; 转换电压值为 4 位数字 (R21, R22, R23, R20)
-000100 df71                          RCALL Display_4Digits   ; 刷新数码管显示 (耗时约 12ms)
+0000f9 9180 0100                     LDS R24, Result_mV_L
+0000fb 9190 0101                     LDS R25, Result_mV_H
+0000fd df4f                          RCALL convert           ; 转换电压值为 4 位数字 (R21, R22, R23, R20)
+0000fe df73                          RCALL Display_4Digits   ; 刷新数码管显示 (耗时约 12ms)
                                  
-                                     ; rcall Delay ; 移除额外的延时，因为 Display_4Digits 已经提供了足够的延时
-                                 
-                                     ; --- 逻辑判断 ---
-000101 9100 0102                     LDS R16, Direction_Addr
-000103 2300                          TST R16
-000104 f009                          breq Increment
-000105 c009                          rjmp Decrement
-                                 
-                                 Increment:
-000106 960a                          adiw DutyL, STEP_SIZE
-                                     ; 比较是否达到最大值
-000107 e103                          ldi r16, high(SERVO_MAX)
-000108 3888                          cpi DutyL, low(SERVO_MAX)
-000109 0790                          cpc DutyH, r16
-00010a f360                          brlo Main_loop
-00010b e001                          LDI R16, 1
-00010c 9300 0102                     STS Direction_Addr, R16
-00010e cfe8                          rjmp Main_loop
-                                 
-                                 Decrement:
-00010f 970a                          sbiw DutyL, STEP_SIZE
-                                     ; 比较是否达到最小值
-000110 e003                          ldi r16, high(SERVO_MIN)
-000111 3e88                          cpi DutyL, low(SERVO_MIN)
-000112 0790                          cpc DutyH, r16
-000113 f718                          brsh Main_loop
-000114 e000                          LDI R16, 0
-000115 9300 0102                     STS Direction_Addr, R16
-000117 cfdf                          RJMP Main_loop  
+0000ff cff9                          RJMP Main_loop  
                                  
                                  ADC_ISR:
                                      ; [新增] 保护 SREG 和冲突的寄存器
-000118 930f                          PUSH R16
-000119 b70f                          IN R16, SREG
-00011a 930f                          PUSH R16        ; 保存 SREG
-00011b 934f                          PUSH R20
-00011c 935f                          PUSH R21
-00011d 936f                          PUSH R22
+000100 930f                          PUSH R16
+000101 b70f                          IN R16, SREG
+000102 930f                          PUSH R16        ; 保存 SREG
+000103 934f                          PUSH R20
+000104 935f                          PUSH R21
+000105 936f                          PUSH R22
+000106 931f                          PUSH R17        ; 保护 R17 (Fans 和 Mul 使用)
+000107 92ff                          PUSH R15        ; 保护 R15 (Mul 使用)
+000108 92ef                          PUSH R14        ; 保护 R14 (Mul 使用)
                                  
                                      ; 读取 ADC，先读 ADCL 再读 ADCH
-00011e 9000 0078                     LDS R0, ADCL
-000120 9010 0079                     LDS R1, ADCH
+000109 9000 0078                     LDS R0, ADCL
+00010b 9010 0079                     LDS R1, ADCH
+00010d 2cb0                          MOV R11, R0       ; R_AL = R0 (ADCL)
+00010e 2ca1                          MOV R10, R1       ; R_AH = R1 (ADCH)
                                  
-                                 	//准备乘法运算：ADC_Value * 5000
-000122 e858                          LDI R21, CONST_5000_L ; R21 = 5000_L
-000123 e163                          LDI R22, CONST_5000_H ; R22 = 5000_H
-000124 2cb0                      	MOV R11, R0       ; R_AL = R0 (ADCL)
-000125 2ca1                          MOV R10, R1       ; R_AH = R1 (ADCH)
+                                     ; 检查当前通道
+00010f 9100 0103                     LDS R16, ADC_Channel_Flag
+000111 3000                          CPI R16, 0
+000112 f009                          BREQ Handle_ADC4_Fan
+000113 c018                          RJMP Handle_ADC5_Servo
                                  
-000126 2ec5                          MOV R12, R21      ; R_BL = R21 (CONST_5000_L)
-000127 2ed6                          MOV R13, R22      ; R_BH = R22 (CONST_5000_H)
+                                 Handle_ADC4_Fan:
+                                     ; -------------------------------------------------
+                                     ; 通道 4: 风扇控制 + 电压显示
+                                     ; -------------------------------------------------
+                                     
+                                     ; 1. 调用风扇控制 (使用 R10:R11)
+000114 df87                          RCALL Fans
                                  
-000128 df02                      	rcall Mul16x16_32
-                                 ; 右移10位
-000129 e04a                          LDI R20, 10
+                                     ; 2. 计算电压值 (ADC * 5000)
+000115 e858                          LDI R21, CONST_5000_L ; R21 = 5000_L
+000116 e163                          LDI R22, CONST_5000_H ; R22 = 5000_H
+000117 2ec5                          MOV R12, R21      ; R_BL = R21
+000118 2ed6                          MOV R13, R22      ; R_BH = R22
+                                 
+000119 df11                      	rcall Mul16x16_32
+                                     
+                                     ; 右移10位
+00011a e04a                          LDI R20, 10
                                  ShiftLoop:
-00012a 9516                          LSR R17
-00012b 9507                          ROR R16
-00012c 94f7                          ROR R15
-00012d 94e7                          ROR R14
-00012e 954a                          DEC R20
-00012f f7d1                          BRNE ShiftLoop
-                                     ; 右移10位后，16位有效数据在R15:R14中
-                                     ; [修改] 删除了覆盖 R24/R25 (DutyL/H) 的指令
-000130 92e0 0100                     STS Result_mV_L, R14  ; 低8位
-000132 92f0 0101                     STS Result_mV_H, R15  ; 高8位
-                                 ; 此时R16:R15为mV值
+00011b 9516                          LSR R17
+00011c 9507                          ROR R16
+00011d 94f7                          ROR R15
+00011e 94e7                          ROR R14
+00011f 954a                          DEC R20
+000120 f7d1                          BRNE ShiftLoop
+                                     
+                                     ; 保存结果到 SRAM
+000121 92e0 0100                     STS Result_mV_L, R14  ; 低8位
+000123 92f0 0101                     STS Result_mV_H, R15  ; 高8位
                                  
-                                 ;*****************************************************
-                                 ; 显示及风扇控制部分模块
-                                 ;*****************************************************
-000134 df67                      	RCALL Fans
+                                     ; 3. 切换到 ADC5 (Servo)
+000125 e405                          LDI R16, 0x45   ; ADC5, AVCC
+000126 9300 007c                     STS ADMUX, R16
+000128 e001                          LDI R16, 1
+000129 9300 0103                     STS ADC_Channel_Flag, R16
+00012b c013                          RJMP ADC_ISR_Exit
+                                 
+                                 Handle_ADC5_Servo:
+                                     ; -------------------------------------------------
+                                     ; 通道 5: 舵机控制
+                                     ; -------------------------------------------------
+                                     ; 算法: Servo_PWM = 1000 + (ADC * 4)
+                                     ; R10:R11 是 ADC 值 (0-1023)
+                                     
+                                     ; 左移 2 位 (x4)
+00012c 0cbb                          LSL R11
+00012d 1caa                          ROL R10
+00012e 0cbb                          LSL R11
+00012f 1caa                          ROL R10
+                                     
+                                     ; 加上 1000 (SERVO_MIN)
+000130 ee08                          LDI R16, low(1000)
+000131 0eb0                          ADD R11, R16
+000132 e003                          LDI R16, high(1000)
+000133 1ea0                          ADC R10, R16
+                                     
+                                     ; 更新 OCR1A (舵机 PWM)
+000134 92a0 0089                     STS OCR1AH, R10
+000136 92b0 0088                     STS OCR1AL, R11
+                                     
+                                     ; 切换到 ADC4 (Fan)
+000138 e404                          LDI R16, 0x44   ; ADC4, AVCC
+000139 9300 007c                     STS ADMUX, R16
+00013b e000                          LDI R16, 0
+00013c 9300 0103                     STS ADC_Channel_Flag, R16
+00013e c000                          RJMP ADC_ISR_Exit
+                                 
+                                 ADC_ISR_Exit:
                                  ;*****************************************************
                                  ; 开始下一次转换
                                  ;*****************************************************
-000135 9100 007a                     LDS R16, ADCSRA
-000137 6400                          ORI R16, 1<<ADSC
-000138 9300 007a                     STS ADCSRA, R16
+00013f 9100 007a                     LDS R16, ADCSRA
+000141 6400                          ORI R16, 1<<ADSC
+000142 9300 007a                     STS ADCSRA, R16
                                      
                                      ; [新增] 恢复寄存器
-00013a 916f                          POP R22
-00013b 915f                          POP R21
-00013c 914f                          POP R20
-00013d 910f                          POP R16         ; 弹出 SREG 值
-00013e bf0f                          OUT SREG, R16   ; 恢复 SREG
-00013f 910f                          POP R16         ; 恢复 R16
-000140 9518                          RETI
-000141 9518                          RETI
+000144 90ef                          POP R14
+000145 90ff                          POP R15
+000146 911f                          POP R17
+000147 916f                          POP R22
+000148 915f                          POP R21
+000149 914f                          POP R20
+00014a 910f                          POP R16         ; 弹出 SREG 值
+00014b bf0f                          OUT SREG, R16   ; 恢复 SREG
+00014c 910f                          POP R16         ; 恢复 R16
+00014d 9518                          RETI
+00014e 9518                          RETI
                                  
                                  .cseg
                                  SEG_TABLE:
-000142 d714
-000143 454c
-000144 2587
-000145 5724
+00014f d714
+000150 454c
+000151 2587
+000152 5724
 
 
 RESOURCE USE INFORMATION
@@ -1502,39 +1526,39 @@ counted separately from r26..r31 here.
 
 "ATmega328P" register use summary:
 x  :   0 y  :   0 z  :   4 r0 :   6 r1 :   7 r2 :   0 r3 :   0 r4 :   0 
-r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   4 r11:   4 r12:   3 
-r13:   3 r14:   4 r15:   6 r16:  93 r17:  14 r18:  13 r19:  12 r20:  17 
-r21:   7 r22:   7 r23:   3 r24:  12 r25:   9 r26:   0 r27:   0 r28:  10 
+r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   8 r11:   8 r12:   3 
+r13:   3 r14:   6 r15:   8 r16:  98 r17:  16 r18:  13 r19:  12 r20:  17 
+r21:   7 r22:   7 r23:   3 r24:   7 r25:   6 r26:   0 r27:   0 r28:  10 
 r29:   9 r30:   8 r31:   4 
 Registers used: 23 out of 35 (65.7%)
 
 "ATmega328P" instruction use summary:
-.lds  :   0 .sts  :   0 adc   :   5 add   :   8 adiw  :   1 and   :   0 
+.lds  :   0 .sts  :   0 adc   :   6 add   :   9 adiw  :   0 and   :   0 
 andi  :   1 asr   :   0 bclr  :   0 bld   :   0 brbc  :   0 brbs  :   0 
 brcc  :   0 brcs  :   1 break :   0 breq  :   1 brge  :   0 brhc  :   0 
-brhs  :   0 brid  :   0 brie  :   0 brlo  :   3 brlt  :   0 brmi  :   0 
-brne  :   7 brpl  :   0 brsh  :   1 brtc  :   0 brts  :   0 brvc  :   0 
+brhs  :   0 brid  :   0 brie  :   0 brlo  :   2 brlt  :   0 brmi  :   0 
+brne  :   7 brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
 brvs  :   0 bset  :   0 bst   :   0 call  :   0 cbi   :   0 cbr   :   0 
 clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :  10 cls   :   0 
-clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   2 
-cpi   :   6 cpse  :   0 dec   :   4 eor   :   0 fmul  :   0 fmuls :   0 
+clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   0 
+cpi   :   5 cpse  :   0 dec   :   4 eor   :   0 fmul  :   0 fmuls :   0 
 fmulsu:   0 icall :   0 ijmp  :   0 in    :   2 inc   :   3 jmp   :   0 
-ld    :   0 ldd   :   0 ldi   :  47 lds   :   7 lpm   :   8 lsl   :   0 
+ld    :   0 ldd   :   0 ldi   :  49 lds   :   7 lpm   :   8 lsl   :   2 
 lsr   :   3 mov   :  20 movw  :   0 mul   :   5 muls  :   0 mulsu :   0 
-neg   :   0 nop   :   0 or    :   0 ori   :   2 out   :  18 pop   :  16 
-push  :  16 rcall :   8 ret   :   6 reti  :   2 rjmp  :   8 rol   :   0 
+neg   :   0 nop   :   0 or    :   0 ori   :   2 out   :  18 pop   :  19 
+push  :  19 rcall :   8 ret   :   6 reti  :   2 rjmp  :   9 rol   :   2 
 ror   :   5 sbc   :   0 sbci  :   4 sbi   :   2 sbic  :   0 sbis  :   0 
-sbiw  :   2 sbr   :   0 sbrc  :   0 sbrs  :   0 sec   :   0 seh   :   0 
+sbiw  :   1 sbr   :   0 sbrc  :   0 sbrs  :   0 sec   :   0 seh   :   0 
 sei   :   1 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
-sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :  19 
-sub   :   0 subi  :   4 swap  :   0 tst   :   1 wdr   :   0 
-Instructions used: 37 out of 113 (32.7%)
+sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :  22 
+sub   :   0 subi  :   4 swap  :   0 tst   :   0 wdr   :   0 
+Instructions used: 35 out of 113 (31.0%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x00028e    562     10    572   32768   1.7%
-[.dseg] 0x000100 0x000103      0      3      3    2048   0.1%
+[.cseg] 0x000000 0x0002a8    588     10    598   32768   1.8%
+[.dseg] 0x000100 0x000104      0      4      4    2048   0.2%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 
 Assembly complete, 0 errors, 0 warnings

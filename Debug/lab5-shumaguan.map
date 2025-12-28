@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm Thu Dec 25 22:43:35 2025
+AVRASM ver. 2.2.8  D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm Sun Dec 28 23:35:17 2025
 
 
 EQU  SIGNATURE_000 0000001e
@@ -696,10 +696,11 @@ EQU  TWIaddr      00000030
 EQU  SPMRaddr     00000032
 EQU  INT_VECTORS_SIZE 00000034
 CSEG Init         000000cb
-CSEG ADC_ISR      00000118
+CSEG ADC_ISR      00000100
 DSEG Result_mV_L  00000100
 DSEG Result_mV_H  00000101
 DSEG Direction_Addr 00000102
+DSEG ADC_Channel_Flag 00000103
 EQU  CONST_5000_L 00000088
 EQU  CONST_5000_H 00000013
 EQU  SRAM_TEMP_ADDR 00000180
@@ -729,7 +730,7 @@ CSEG Ten_Start    00000066
 CSEG Ten_Sub_Exec 0000006a
 CSEG Ones_Copy    0000006e
 CSEG Display_4Digits 00000072
-CSEG SEG_TABLE    00000142
+CSEG SEG_TABLE    0000014f
 CSEG Delay_s      000000ae
 CSEG Fans         0000009c
 EQU  inner_count  000000c8
@@ -738,8 +739,9 @@ CSEG InnerLoop    000000b4
 CSEG Delay        000000bc
 CSEG L2           000000bf
 CSEG L3           000000c0
-CSEG Start_first_conversion 000000f2
-CSEG Main_loop    000000f7
-CSEG Increment    00000106
-CSEG Decrement    0000010f
-CSEG ShiftLoop    0000012a
+CSEG Start_first_conversion 000000f4
+CSEG Main_loop    000000f9
+CSEG Handle_ADC4_Fan 00000114
+CSEG Handle_ADC5_Servo 0000012c
+CSEG ShiftLoop    0000011b
+CSEG ADC_ISR_Exit 0000013f

@@ -2,20 +2,20 @@
 .include "def.inc"
 .include "functions.asm"
 LDI r16, high(RAMEND)
-OUT SPH, r16
+out SPH, r16
 LDI r16, low(RAMEND)
-OUT SPL, r16
+out SPL, r16
 Init:
-	LDI R16, 0xFF
-	OUT DDRD, R16   //set PORTD as output, with initial output value all 0's
-	LDI R16, 0x0F   // PC0-PC3 Output (Display), PC4 Input (ADC)
-	OUT DDRC, R16   //set PORTC direction
+	ldi R16, 0xFF
+	out DDRD, R16   //设置 PORTD 为输出，初始输出值全为 0
+	ldi R16, 0x0F   // PC0-PC3 输出 (显示), PC4 输入 (ADC)
+	out DDRC, R16   //设置 PORTC 方向
 	sbi DDRB, 3
     sbi DDRB, 1
-	;---------------- Timer2: Fast PWM ----------------
+	;---------------- Timer2 配置 (快速PWM) ----------------
     ; Mode 3: Fast PWM, TOP=0xFF
-    ; WGM00=1, WGM01=1
-    ; Output: Clear OC2B on Compare Match (Non-inverting)
+    ; WGM20=1, WGM21=1
+    ; output: Clear OC2A on Compare Match (非反向)
     ; COM0B1=1
     ldi r16, (1<<COM2A1) | (1<<WGM21) | (1<<WGM20)
     sts TCCR2A, r16
@@ -28,7 +28,7 @@ Init:
     ; Initial Duty = 0
     ldi r16, 40
     sts OCR2A, r16
-    ; ---------------- Timer1 配置 (模式 14) ----------------
+    ; ---------------- Timer1 配置 (快速PWM) ----------------
     ; 模式 14: Fast PWM, TOP = ICR1
     ; COM1A1:1 (非反相), WGM11:1
     ldi r16, (1<<COM1A1) | (1<<WGM11)
@@ -49,24 +49,22 @@ Init:
     ldi DutyL, low(SERVO_MIN)
     LDI R16, 0
     STS Direction_Addr, R16
+    STS ADC_Channel_Flag, R16 ; 初始化 ADC 通道标志为 0
 	;------------------------------------------------------
 	//LDI R16, 1<<ADC0D
-	//STS DIDR0, R16    //Disable digital input buffer on PORTC:0 (saving power) 
+	//STS DIDR0, R16    //禁用 PORTC:0 上的数字输入缓冲器 (省电) 
 	LDI R16, 0x8F   
-	STS ADCSRA, R16 //ADC enalbe, conversion not started, single conversion mode(auto trigger disabled), interrupt disable, system clk diveded by 128 as ADC clock
-	LDI R16, 0x44   // ADC4 (PC4) selected, AVCC reference
-	STS ADMUX, R16   //use AVCC as reference voltage, connect channel 4 to ADC
+	STS ADCSRA, R16 //ADC 使能，转换未开始，单次转换模式(自动触发禁用)，中断禁用，系统时钟 128 分频作为 ADC 时钟
+	LDI R16, 0x44   // 选择 ADC4 (PC4)，AVCC 参考
+	STS ADMUX, R16   //使用 AVCC 作为参考电压，连接通道 4 到 ADC
 	SEI
 
 Start_first_conversion:
 	LDS  R16, ADCSRA
 	ORI  R16, 1<<ADSC
-	STS ADCSRA,R16  //start conversion
+	STS ADCSRA,R16  //开始转换
     
 Main_loop:
-    sts OCR1AH, DutyH
-    sts OCR1AL, DutyL
-
     ; --- 数码管显示刷新 ---
     ; 从 SRAM 读取最新的电压值
     LDS R24, Result_mV_L
@@ -74,34 +72,6 @@ Main_loop:
     RCALL convert           ; 转换电压值为 4 位数字 (R21, R22, R23, R20)
     RCALL Display_4Digits   ; 刷新数码管显示 (耗时约 12ms)
 
-    ; rcall Delay ; 移除额外的延时，因为 Display_4Digits 已经提供了足够的延时
-
-    ; --- 逻辑判断 ---
-    LDS R16, Direction_Addr
-    TST R16
-    breq Increment
-    rjmp Decrement
-
-Increment:
-    adiw DutyL, STEP_SIZE
-    ; 比较是否达到最大值
-    ldi r16, high(SERVO_MAX)
-    cpi DutyL, low(SERVO_MAX)
-    cpc DutyH, r16
-    brlo Main_loop
-    LDI R16, 1
-    STS Direction_Addr, R16
-    rjmp Main_loop
-
-Decrement:
-    sbiw DutyL, STEP_SIZE
-    ; 比较是否达到最小值
-    ldi r16, high(SERVO_MIN)
-    cpi DutyL, low(SERVO_MIN)
-    cpc DutyH, r16
-    brsh Main_loop
-    LDI R16, 0
-    STS Direction_Addr, R16
     RJMP Main_loop  
 
 ADC_ISR:
@@ -112,22 +82,39 @@ ADC_ISR:
     PUSH R20
     PUSH R21
     PUSH R22
+    PUSH R17        ; 保护 R17 (Fans 和 Mul 使用)
+    PUSH R15        ; 保护 R15 (Mul 使用)
+    PUSH R14        ; 保护 R14 (Mul 使用)
 
     ; 读取 ADC，先读 ADCL 再读 ADCH
     LDS R0, ADCL
     LDS R1, ADCH
-
-	//准备乘法运算：ADC_Value * 5000
-    LDI R21, CONST_5000_L ; R21 = 5000_L
-    LDI R22, CONST_5000_H ; R22 = 5000_H
-	MOV R11, R0       ; R_AL = R0 (ADCL)
+    MOV R11, R0       ; R_AL = R0 (ADCL)
     MOV R10, R1       ; R_AH = R1 (ADCH)
 
-    MOV R12, R21      ; R_BL = R21 (CONST_5000_L)
-    MOV R13, R22      ; R_BH = R22 (CONST_5000_H)
+    ; 检查当前通道
+    LDS R16, ADC_Channel_Flag
+    CPI R16, 0
+    BREQ Handle_ADC4_Fan
+    RJMP Handle_ADC5_Servo
+
+Handle_ADC4_Fan:
+    ; -------------------------------------------------
+    ; 通道 4: 风扇控制 + 电压显示
+    ; -------------------------------------------------
+    
+    ; 1. 调用风扇控制 (使用 R10:R11)
+    RCALL Fans
+
+    ; 2. 计算电压值 (ADC * 5000)
+    LDI R21, CONST_5000_L ; R21 = 5000_L
+    LDI R22, CONST_5000_H ; R22 = 5000_H
+    MOV R12, R21      ; R_BL = R21
+    MOV R13, R22      ; R_BH = R22
 
 	rcall Mul16x16_32
-; 右移10位
+    
+    ; 右移10位
     LDI R20, 10
 ShiftLoop:
     LSR R17
@@ -136,16 +123,49 @@ ShiftLoop:
     ROR R14
     DEC R20
     BRNE ShiftLoop
-    ; 右移10位后，16位有效数据在R15:R14中
-    ; [修改] 删除了覆盖 R24/R25 (DutyL/H) 的指令
+    
+    ; 保存结果到 SRAM
     STS Result_mV_L, R14  ; 低8位
     STS Result_mV_H, R15  ; 高8位
-; 此时R16:R15为mV值
 
-;*****************************************************
-; 显示及风扇控制部分模块
-;*****************************************************
-	RCALL Fans
+    ; 3. 切换到 ADC5 (Servo)
+    LDI R16, 0x45   ; ADC5, AVCC
+    STS ADMUX, R16
+    LDI R16, 1
+    STS ADC_Channel_Flag, R16
+    RJMP ADC_ISR_Exit
+
+Handle_ADC5_Servo:
+    ; -------------------------------------------------
+    ; 通道 5: 舵机控制
+    ; -------------------------------------------------
+    ; 算法: Servo_PWM = 1000 + (ADC * 4)
+    ; R10:R11 是 ADC 值 (0-1023)
+    
+    ; 左移 2 位 (x4)
+    LSL R11
+    ROL R10
+    LSL R11
+    ROL R10
+    
+    ; 加上 1000 (SERVO_MIN)
+    LDI R16, low(1000)
+    ADD R11, R16
+    LDI R16, high(1000)
+    ADC R10, R16
+    
+    ; 更新 OCR1A (舵机 PWM)
+    STS OCR1AH, R10
+    STS OCR1AL, R11
+    
+    ; 切换到 ADC4 (Fan)
+    LDI R16, 0x44   ; ADC4, AVCC
+    STS ADMUX, R16
+    LDI R16, 0
+    STS ADC_Channel_Flag, R16
+    RJMP ADC_ISR_Exit
+
+ADC_ISR_Exit:
 ;*****************************************************
 ; 开始下一次转换
 ;*****************************************************
@@ -154,11 +174,14 @@ ShiftLoop:
     STS ADCSRA, R16
     
     ; [新增] 恢复寄存器
+    POP R14
+    POP R15
+    POP R17
     POP R22
     POP R21
     POP R20
     POP R16         ; 弹出 SREG 值
-    OUT SREG, R16   ; 恢复 SREG
+    out SREG, R16   ; 恢复 SREG
     POP R16         ; 恢复 R16
     RETI
     RETI

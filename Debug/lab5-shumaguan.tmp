@@ -25,10 +25,11 @@
  </OUTPUT_FILES>
  <LABELS>
   <Init><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>8</LINE></Init>
-  <ADC_ISR><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>107</LINE></ADC_ISR>
+  <ADC_ISR><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>77</LINE></ADC_ISR>
   <Result_mV_L><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\def.inc</FILE><LINE>15</LINE></Result_mV_L>
   <Result_mV_H><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\def.inc</FILE><LINE>16</LINE></Result_mV_H>
   <Direction_Addr><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\def.inc</FILE><LINE>17</LINE></Direction_Addr>
+  <ADC_Channel_Flag><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\def.inc</FILE><LINE>18</LINE></ADC_Channel_Flag>
   <Mul16x16_32><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>11</LINE></Mul16x16_32>
   <convert><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>79</LINE></convert>
   <Thousand_Loop><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>100</LINE></Thousand_Loop>
@@ -39,7 +40,7 @@
   <Ten_Sub_Exec><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>143</LINE></Ten_Sub_Exec>
   <Ones_Copy><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>151</LINE></Ones_Copy>
   <Display_4Digits><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>162</LINE></Display_4Digits>
-  <SEG_TABLE><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>167</LINE></SEG_TABLE>
+  <SEG_TABLE><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>190</LINE></SEG_TABLE>
   <Delay_s><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>251</LINE></Delay_s>
   <Fans><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>214</LINE></Fans>
   <OuterLoop><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>257</LINE></OuterLoop>
@@ -47,10 +48,11 @@
   <Delay><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>271</LINE></Delay>
   <L2><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>275</LINE></L2>
   <L3><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\functions.asm</FILE><LINE>276</LINE></L3>
-  <Start_first_conversion><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>61</LINE></Start_first_conversion>
-  <Main_loop><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>66</LINE></Main_loop>
-  <Increment><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>85</LINE></Increment>
-  <Decrement><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>96</LINE></Decrement>
-  <ShiftLoop><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>132</LINE></ShiftLoop>
+  <Start_first_conversion><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>62</LINE></Start_first_conversion>
+  <Main_loop><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>67</LINE></Main_loop>
+  <Handle_ADC4_Fan><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>101</LINE></Handle_ADC4_Fan>
+  <Handle_ADC5_Servo><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>138</LINE></Handle_ADC5_Servo>
+  <ShiftLoop><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>119</LINE></ShiftLoop>
+  <ADC_ISR_Exit><FILE>D:\microchip_homework\lab5-shumaguan\lab5-shumaguan\main.asm</FILE><LINE>168</LINE></ADC_ISR_Exit>
  </LABELS>
 </ASSEMBLER_INFO>

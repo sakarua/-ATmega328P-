@@ -15,6 +15,7 @@
 Result_mV_L: .byte 1 ; 毫伏特值的低 8 位 (地址 $0100)
 Result_mV_H: .byte 1 ; 毫伏特值的高 8 位 (地址 $0101)
 Direction_Addr: .byte 1 ; 存储方向变量
+ADC_Channel_Flag: .byte 1 ; 0=ADC4(Fan), 1=ADC5(Servo)
 
 .cseg
 .equ CONST_5000_L = low(5000)   ; 5000的低8位: $88 (136)
